@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  h1 Upload map to server
+
+  if path
+    p Successfully uploaded new map
+  else
+    p Select the zip file to upload.
+    if error
+      p Error: #{error}
+    form(method='post', enctype='multipart/form-data')
+      input(type='file', name='map', required)
+      input(type='submit', value='Upload Map')

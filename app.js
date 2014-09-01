@@ -10,6 +10,9 @@ var path = require('path');
 var spawn = require('child_process').spawn;
 var readline = require('readline');
 var AdmZip = require('adm-zip');
+var fs = require('fs');
+var formidable = require('formidable');
+var rmdir = require('rimraf');
 
 var app = express();
 
@@ -163,6 +166,54 @@ app.get('/download', function(req, res, next) {
 
         res.attachment('world.zip');
         res.send(buffer);
+    });
+});
+
+app.get('/upload', function(req, res) {
+    res.render('upload');
+});
+
+app.post('/upload', function(req, res) {
+    if (status !== 'stopped') {
+        res.render('upload', { error: 'Server is still running' });
+        return;
+    }
+
+    var form = new formidable.IncomingForm;
+
+    form.parse(req, function(error, fields, files) {
+        if (error) {
+            res.render('upload', { error: error });
+            return;
+        }
+
+        if (!files.map) {
+            res.render('upload');
+            return;
+        }
+
+        var zip = new AdmZip(files.map.path);
+
+        if (zip.getEntry('level.dat')) {
+            fs.rename('world', 'world-bak', function(error) {
+                try {
+                    zip.extractAllTo('world', true);
+                    rmdir('world-bak', function(error) {
+                        res.render('upload', { path: files.map.path });
+                    });
+                } catch (error) {
+                    fs.rename('world-bak', 'world', function(error) {
+                        res.render('upload', {
+                            error: 'Failed to extract the file'
+                        });
+                    });
+                }
+            });
+        } else {
+            res.render('upload', {
+                error: 'File level.dat not found in the root of the zip file'
+            });
+        }
     });
 });
 
