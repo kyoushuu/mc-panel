@@ -76,6 +76,24 @@ function start(callback) {
     callback();
 }
 
+function stop(callback) {
+    if (server === null) {
+        callback('Server is not running');
+        return;
+    }
+
+    if (status !== 'started') {
+        callback('Server is busy');
+        return;
+    }
+
+    server.stdin.write('stop\n');
+
+    server.once('close', function (code) {
+        callback();
+    });
+}
+
 /*
  * GET home page.
  */
@@ -102,5 +120,19 @@ http.createServer(app).listen(app.get('port'), function() {
 
         console.log('Server has been started');
     });
+});
+
+
+process.on('SIGINT', function() {
+    if (status !== 'stopped') {
+        console.log('Stopping server...');
+        stop(function(error) {
+            console.log('Server has been stopped');
+            process.exit();
+        });
+    } else {
+        console.log('Server is already stopped');
+        process.exit();
+    }
 });
 
