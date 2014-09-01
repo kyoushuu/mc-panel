@@ -53,9 +53,9 @@ function start(callback) {
 
     server = spawn('java', [
         '-Xmx490M', '-Xms490M',
-        '-jar', 'minecraft_server.jar',
+        '-jar', process.env.OPENSHIFT_DATA_DIR + 'minecraft_server.jar',
         'nogui'
-    ]);
+    ], { cwd: process.env.OPENSHIFT_DATA_DIR });
 
     rl = readline.createInterface({
         input: server.stderr,
@@ -104,7 +104,7 @@ function stop(callback) {
 function downloadMap(stream, callback) {
     if (status === 'stopped') {
         var zip = new AdmZip();
-        zip.addLocalFolder('world');
+        zip.addLocalFolder(process.env.OPENSHIFT_DATA_DIR + 'world');
         callback(null, zip.toBuffer());
         return;
     }
@@ -127,7 +127,7 @@ function downloadMap(stream, callback) {
             rl.removeListener('line', savedAll);
 
             var zip = new AdmZip();
-            zip.addLocalFolder('world');
+            zip.addLocalFolder(process.env.OPENSHIFT_DATA_DIR + 'world');
             callback(null, zip.toBuffer());
 
             if (autosave) {
@@ -198,14 +198,16 @@ app.post('/upload', function(req, res) {
         var zip = new AdmZip(files.map.path);
 
         if (zip.getEntry('level.dat')) {
-            fs.rename('world', 'world-bak', function(error) {
+            fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world',
+                      process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
                 try {
-                    zip.extractAllTo('world', true);
-                    rmdir('world-bak', function(error) {
+                    zip.extractAllTo(process.env.OPENSHIFT_DATA_DIR + 'world', true);
+                    rmdir(process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
                         res.render('upload', { path: files.map.path });
                     });
                 } catch (error) {
-                    fs.rename('world-bak', 'world', function(error) {
+                    fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world-bak',
+                              process.env.OPENSHIFT_DATA_DIR + 'world', function(error) {
                         res.render('upload', {
                             error: 'Failed to extract the file'
                         });
