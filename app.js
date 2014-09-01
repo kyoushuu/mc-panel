@@ -7,6 +7,9 @@ var express = require('express');
 var http = require('http');
 var path = require('path');
 
+var spawn = require('child_process').spawn;
+var readline = require('readline');
+
 var app = express();
 
 // all environments
@@ -28,16 +31,70 @@ if ('development' == app.get('env')) {
 }
 
 
+var status = 'stopped';
+var server = null;
+var rl = null;
+
+
+function start(callback) {
+    if (status !== 'stopped') {
+        callback('Server is already running');
+        return;
+    }
+
+    status = 'starting';
+
+    server = spawn('java', [
+        '-Xmx490M', '-Xms490M',
+        '-jar', 'minecraft_server.jar',
+        'nogui'
+    ]);
+
+    rl = readline.createInterface({
+        input: server.stderr,
+        output: server.stdin,
+        terminal: false
+    });
+
+    rl.on('line', function (line) {
+        console.log(line);
+
+        if (line.indexOf('[INFO] Done') >= 0) {
+            status = 'started';
+        }
+
+        if (line.indexOf('[INFO] Stopping server') >= 0) {
+            status = 'stopping';
+        }
+    });
+
+    server.on('close', function (code) {
+        status = 'stopped';
+        rl = null;
+    });
+
+    callback();
+}
+
 /*
  * GET home page.
  */
 
 app.get('/', function(req, res) {
-    res.render('index', { title: 'Express' });
+    res.render('index', { title: 'Express', status: status });
 });
 
 
 http.createServer(app).listen(app.get('port'), function() {
     console.log('Express server listening on port ' + app.get('port'));
+    console.log('Starting server...');
+    start(function(error) {
+        if (error) {
+            console.log('Failed to start Minecraft server: ' + error);
+            return;
+        }
+
+        console.log('Server has been started');
+    });
 });
 
