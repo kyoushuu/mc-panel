@@ -12,5 +12,6 @@
     "adm-zip": "~0.4.4",
     "formidable": "~1.0.15",
     "rimraf": "~2.2.8"
-  }
+  },
+  "main": "./app.js"
 }
