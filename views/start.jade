@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  h1 Start server
+  p
+    if !error
+        | Starting the server...
+    else
+        | Error: #{error}

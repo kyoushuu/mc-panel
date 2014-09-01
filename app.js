@@ -84,6 +84,12 @@ app.get('/', function(req, res) {
     res.render('index', { title: 'Express', status: status });
 });
 
+app.get('/start', function(req, res) {
+    start(function(error) {
+        res.render('start', { error: error });
+    });
+});
+
 
 http.createServer(app).listen(app.get('port'), function() {
     console.log('Express server listening on port ' + app.get('port'));
