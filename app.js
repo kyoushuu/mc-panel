@@ -9,6 +9,7 @@ var path = require('path');
 
 var spawn = require('child_process').spawn;
 var readline = require('readline');
+var AdmZip = require('adm-zip');
 
 var app = express();
 
@@ -94,6 +95,46 @@ function stop(callback) {
     });
 }
 
+function downloadMap(stream, callback) {
+    if (status === 'stopped') {
+        var zip = new AdmZip();
+        zip.addLocalFolder('world');
+        callback(null, zip.toBuffer());
+        return;
+    }
+
+    var autosave = true;
+
+    rl.on('line', function autosaveOff(line) {
+        if (line.indexOf('[INFO] Turned off world auto-saving') >= 0 ||
+            line.indexOf('[INFO] Saving is already turned off.') >= 0) {
+            rl.removeListener('line', autosaveOff);
+
+            server.stdin.write('save-all\n');
+
+            autosave = line.indexOf('[INFO] Turned off world auto-saving') >= 0;
+        }
+    });
+
+    rl.on('line', function savedAll(line) {
+        if (line.indexOf('[INFO] Saved the world') >= 0) {
+            rl.removeListener('line', savedAll);
+
+            var zip = new AdmZip();
+            zip.addLocalFolder('world');
+            callback(null, zip.toBuffer());
+
+            if (autosave) {
+                server.stdin.write('save-on\n');
+            }
+        }
+    });
+
+    server.stdin.write('say Saving the world for download...\n');
+    server.stdin.write('save-off\n');
+}
+
+
 /*
  * GET home page.
  */
@@ -111,6 +152,17 @@ app.get('/start', function(req, res) {
 app.get('/stop', function(req, res) {
     stop(function(error) {
         res.render('stop', { error: error });
+    });
+});
+
+app.get('/download', function(req, res, next) {
+    downloadMap(res, function(error, buffer) {
+        if (error) {
+            next(error);
+        }
+
+        res.attachment('world.zip');
+        res.send(buffer);
     });
 });
 
