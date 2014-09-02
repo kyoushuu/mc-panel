@@ -140,6 +140,27 @@ function downloadMap(stream, callback) {
     server.stdin.write('save-off\n');
 }
 
+function uploadMap(zip, callback) {
+    if (zip.getEntry('level.dat')) {
+        fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world',
+                  process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
+            try {
+                zip.extractAllTo(process.env.OPENSHIFT_DATA_DIR + 'world', true);
+                rmdir(process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
+                    callback();
+                });
+            } catch (error) {
+                fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world-bak',
+                          process.env.OPENSHIFT_DATA_DIR + 'world', function(error) {
+                    callback('Failed to extract the file');
+                });
+            }
+        });
+    } else {
+        callback('File level.dat not found in the root of the zip file');
+    }
+}
+
 
 /*
  * GET home page.
@@ -190,35 +211,58 @@ app.post('/upload', function(req, res) {
             return;
         }
 
-        if (!files.map) {
+        if (fields.url) {
+            var request = http.get(fields.url, function(response) {
+                var data = [];
+                var dataLen = 0;
+
+                response.on('data', function(chunk) {
+                    data.push(chunk);
+                    dataLen += chunk.length;
+                });
+
+                response.on('end', function(chunk) {
+                    var buff = new Buffer(dataLen);
+
+                    for (var i=0, len = data.length, pos = 0; i < len; i++) {
+                        data[i].copy(buff, pos);
+                        pos += data[i].length;
+                    }
+
+                    var zip = new AdmZip(buff);
+                    uploadMap(zip, function(error) {
+                        if (error) {
+                            res.render('upload', { error: error });
+                            return;
+                        }
+
+                        res.render('upload', { path: fields.url });
+                    });
+                });
+            });
+
+            request.on('error', function(error) {
+                if (error) {
+                    res.render('upload', { error: error });
+                    return;
+                }
+            });
+
+            return;
+        } else if (!files.map) {
             res.render('upload');
             return;
         }
 
         var zip = new AdmZip(files.map.path);
+        uploadMap(zip, function(error) {
+            if (error) {
+                res.render('upload', { error: error });
+                return;
+            }
 
-        if (zip.getEntry('level.dat')) {
-            fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world',
-                      process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
-                try {
-                    zip.extractAllTo(process.env.OPENSHIFT_DATA_DIR + 'world', true);
-                    rmdir(process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
-                        res.render('upload', { path: files.map.path });
-                    });
-                } catch (error) {
-                    fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world-bak',
-                              process.env.OPENSHIFT_DATA_DIR + 'world', function(error) {
-                        res.render('upload', {
-                            error: 'Failed to extract the file'
-                        });
-                    });
-                }
-            });
-        } else {
-            res.render('upload', {
-                error: 'File level.dat not found in the root of the zip file'
-            });
-        }
+            res.render('upload', { path: files.map.path });
+        });
     });
 });
 
