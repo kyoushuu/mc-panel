@@ -103,11 +103,27 @@ function stop(callback) {
     });
 }
 
+function zipMapFolder(callback) {
+    var zip = new AdmZip();
+    zip.addLocalFolder(cwd + 'world');
+    zip.toBuffer(function(buffer) {
+        callback(null, buffer);
+    }, function(error) {
+        callback(error);
+    });
+}
+
 function downloadMap(stream, callback) {
     if (status === 'stopped') {
-        var zip = new AdmZip();
-        zip.addLocalFolder(cwd + 'world');
-        callback(null, zip.toBuffer());
+        zipMapFolder(function (error, buffer) {
+            if (error) {
+                callback(error);
+                return;
+            }
+
+            callback(null, buffer);
+        });
+
         return;
     }
 
@@ -128,13 +144,18 @@ function downloadMap(stream, callback) {
         if (line.indexOf('[Server thread/INFO]: Saved the world') >= 0) {
             rl.removeListener('line', savedAll);
 
-            var zip = new AdmZip();
-            zip.addLocalFolder(cwd + 'world');
-            callback(null, zip.toBuffer());
+            zipMapFolder(function (error, buffer) {
+                if (error) {
+                    callback(error);
+                    return;
+                }
 
-            if (autosave) {
-                server.stdin.write('save-on\n');
-            }
+                if (autosave) {
+                    server.stdin.write('save-on\n');
+                }
+
+                callback(null, buffer);
+            });
         }
     });
 
