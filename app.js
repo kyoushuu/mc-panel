@@ -68,11 +68,11 @@ function start(callback) {
     rl.on('line', function (line) {
         console.log(line);
 
-        if (line.indexOf('[INFO] Done') >= 0) {
+        if (line.indexOf('[Server thread/INFO]: Done') >= 0) {
             status = 'started';
         }
 
-        if (line.indexOf('[INFO] Stopping server') >= 0) {
+        if (line.indexOf('[Server thread/INFO]: Stopping server') >= 0) {
             status = 'stopping';
         }
     });
@@ -114,18 +114,18 @@ function downloadMap(stream, callback) {
     var autosave = true;
 
     rl.on('line', function autosaveOff(line) {
-        if (line.indexOf('[INFO] Turned off world auto-saving') >= 0 ||
-            line.indexOf('[INFO] Saving is already turned off.') >= 0) {
+        if (line.indexOf('[Server thread/INFO]: Turned off world auto-saving') >= 0 ||
+            line.indexOf('[Server thread/INFO]: Saving is already turned off.') >= 0) {
             rl.removeListener('line', autosaveOff);
 
             server.stdin.write('save-all\n');
 
-            autosave = line.indexOf('[INFO] Turned off world auto-saving') >= 0;
+            autosave = line.indexOf('[Server thread/INFO]: Turned off world auto-saving') >= 0;
         }
     });
 
     rl.on('line', function savedAll(line) {
-        if (line.indexOf('[INFO] Saved the world') >= 0) {
+        if (line.indexOf('[Server thread/INFO]: Saved the world') >= 0) {
             rl.removeListener('line', savedAll);
 
             var zip = new AdmZip();
