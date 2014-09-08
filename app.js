@@ -41,6 +41,7 @@ if ('development' == app.get('env')) {
 var status = 'stopped';
 var server = null;
 var rl = null;
+var cwd = process.env.OPENSHIFT_DATA_DIR || '';
 
 
 function start(callback) {
@@ -53,9 +54,9 @@ function start(callback) {
 
     server = spawn('java', [
         '-Xmx768M', '-Xms768M',
-        '-jar', process.env.OPENSHIFT_DATA_DIR + 'minecraft_server.jar',
+        '-jar', cwd + 'minecraft_server.jar',
         'nogui'
-    ], { cwd: process.env.OPENSHIFT_DATA_DIR });
+    ], { cwd: cwd });
 
     rl = readline.createInterface({
         input: server.stdout,
@@ -104,7 +105,7 @@ function stop(callback) {
 function downloadMap(stream, callback) {
     if (status === 'stopped') {
         var zip = new AdmZip();
-        zip.addLocalFolder(process.env.OPENSHIFT_DATA_DIR + 'world');
+        zip.addLocalFolder(cwd + 'world');
         callback(null, zip.toBuffer());
         return;
     }
@@ -127,7 +128,7 @@ function downloadMap(stream, callback) {
             rl.removeListener('line', savedAll);
 
             var zip = new AdmZip();
-            zip.addLocalFolder(process.env.OPENSHIFT_DATA_DIR + 'world');
+            zip.addLocalFolder(cwd + 'world');
             callback(null, zip.toBuffer());
 
             if (autosave) {
@@ -142,16 +143,14 @@ function downloadMap(stream, callback) {
 
 function uploadMap(zip, callback) {
     if (zip.getEntry('level.dat')) {
-        fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world',
-                  process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
+        fs.rename(cwd + 'world', cwd + 'world-bak', function(error) {
             try {
-                zip.extractAllTo(process.env.OPENSHIFT_DATA_DIR + 'world', true);
-                rmdir(process.env.OPENSHIFT_DATA_DIR + 'world-bak', function(error) {
+                zip.extractAllTo(cwd + 'world', true);
+                rmdir(cwd + 'world-bak', function(error) {
                     callback();
                 });
             } catch (error) {
-                fs.rename(process.env.OPENSHIFT_DATA_DIR + 'world-bak',
-                          process.env.OPENSHIFT_DATA_DIR + 'world', function(error) {
+                fs.rename(cwd + 'world-bak', cwd + 'world', function(error) {
                     callback('Failed to extract the file');
                 });
             }
