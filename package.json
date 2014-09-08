@@ -11,7 +11,8 @@
     "less-middleware": "~0.1.15",
     "adm-zip": "~0.4.4",
     "formidable": "~1.0.15",
-    "rimraf": "~2.2.8"
+    "rimraf": "~2.2.8",
+    "tmp": "0.0.24"
   },
   "main": "./app.js"
 }
