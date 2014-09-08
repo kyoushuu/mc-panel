@@ -13,6 +13,7 @@ var AdmZip = require('adm-zip');
 var fs = require('fs');
 var formidable = require('formidable');
 var rmdir = require('rimraf');
+var tmp = require('tmp');
 
 var app = express();
 
@@ -141,7 +142,8 @@ function downloadMap(stream, callback) {
     server.stdin.write('save-off\n');
 }
 
-function uploadMap(zip, callback) {
+function uploadMap(path, callback) {
+    var zip = new AdmZip(path);
     if (zip.getEntry('level.dat')) {
         fs.rename(cwd + 'world', cwd + 'world-bak', function(error) {
             try {
@@ -158,6 +160,42 @@ function uploadMap(zip, callback) {
     } else {
         callback('File level.dat not found in the root of the zip file');
     }
+}
+
+function uploadMapFromLink(url, callback) {
+    tmp.tmpName({ keep: true }, function(error, path) {
+        if (error) {
+            callback(error);
+            return;
+        }
+
+        var file = fs.createWriteStream(path);
+        var request = http.get(url, function(response) {
+            file.on('finish', function() {
+                uploadMap(path, function(error) {
+                    if (error) {
+                        callback(error);
+                        return;
+                    }
+
+                    fs.unlink(path, function (error) {
+                        if (error) {
+                            callback(error);
+                            return;
+                        }
+
+                        callback();
+                    });
+                });
+            });
+
+            response.pipe(file);
+        });
+
+        request.on('error', function(error) {
+            callback(error);
+        });
+    });
 }
 
 
@@ -211,40 +249,13 @@ app.post('/upload', function(req, res) {
         }
 
         if (fields.url) {
-            var request = http.get(fields.url, function(response) {
-                var data = [];
-                var dataLen = 0;
-
-                response.on('data', function(chunk) {
-                    data.push(chunk);
-                    dataLen += chunk.length;
-                });
-
-                response.on('end', function(chunk) {
-                    var buff = new Buffer(dataLen);
-
-                    for (var i=0, len = data.length, pos = 0; i < len; i++) {
-                        data[i].copy(buff, pos);
-                        pos += data[i].length;
-                    }
-
-                    var zip = new AdmZip(buff);
-                    uploadMap(zip, function(error) {
-                        if (error) {
-                            res.render('upload', { error: error });
-                            return;
-                        }
-
-                        res.render('upload', { path: fields.url });
-                    });
-                });
-            });
-
-            request.on('error', function(error) {
+            uploadMapFromLink(fields.url, function(error) {
                 if (error) {
                     res.render('upload', { error: error });
                     return;
                 }
+
+                res.render('upload', { path: fields.url });
             });
 
             return;
@@ -253,8 +264,7 @@ app.post('/upload', function(req, res) {
             return;
         }
 
-        var zip = new AdmZip(files.map.path);
-        uploadMap(zip, function(error) {
+        uploadMap(files.map.path, function(error) {
             if (error) {
                 res.render('upload', { error: error });
                 return;
