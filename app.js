@@ -58,7 +58,7 @@ function start(callback) {
     ], { cwd: process.env.OPENSHIFT_DATA_DIR });
 
     rl = readline.createInterface({
-        input: server.stderr,
+        input: server.stdout,
         output: server.stdin,
         terminal: false
     });
