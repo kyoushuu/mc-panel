@@ -52,7 +52,7 @@ function start(callback) {
     status = 'starting';
 
     server = spawn('java', [
-        '-Xmx490M', '-Xms490M',
+        '-Xmx768M', '-Xms768M',
         '-jar', process.env.OPENSHIFT_DATA_DIR + 'minecraft_server.jar',
         'nogui'
     ], { cwd: process.env.OPENSHIFT_DATA_DIR });
