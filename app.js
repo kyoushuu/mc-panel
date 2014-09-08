@@ -14,6 +14,7 @@ var fs = require('fs');
 var formidable = require('formidable');
 var rmdir = require('rimraf');
 var tmp = require('tmp');
+var moment = require('moment');
 
 var app = express();
 
@@ -246,7 +247,7 @@ app.get('/download', function(req, res, next) {
             next(error);
         }
 
-        res.attachment('world.zip');
+        res.attachment('world-' + moment().format('YYYYMMDD-HHmm') + '.zip');
         res.send(buffer);
     });
 });
