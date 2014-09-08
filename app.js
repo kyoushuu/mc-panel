@@ -281,7 +281,7 @@ http.createServer(app).listen(app.get('port'), app.get('ipaddress'), function() 
 });
 
 
-process.on('SIGINT', function() {
+signalStop = function() {
     if (status !== 'stopped') {
         console.log('Stopping server...');
         stop(function(error) {
@@ -292,5 +292,8 @@ process.on('SIGINT', function() {
         console.log('Server is already stopped');
         process.exit();
     }
-});
+};
+
+process.on('SIGINT', signalStop);
+process.on('SIGTERM', signalStop);
 
