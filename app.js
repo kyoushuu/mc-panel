@@ -74,6 +74,7 @@ function start(callback) {
 
     server = spawn('java', [
         '-server',
+        '-XX:+AggressiveOpts',
         '-Xmx820M', '-Xms820M',
         '-jar', cwd + 'minecraft_server.jar',
         'nogui'
