@@ -74,6 +74,8 @@ function start(callback) {
 
     server = spawn('java', [
         '-server',
+        '-XX:+UseConcMarkSweepGC', '-XX:+UseParNewGC',
+        '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=2',
         '-XX:+AggressiveOpts',
         '-Xmx820M', '-Xms820M',
         '-jar', cwd + 'minecraft_server.jar',
