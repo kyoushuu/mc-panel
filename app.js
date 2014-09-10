@@ -73,7 +73,7 @@ function start(callback) {
     status = 'starting';
 
     server = spawn('java', [
-        '-Xmx768M', '-Xms768M',
+        '-Xmx820M', '-Xms820M',
         '-jar', cwd + 'minecraft_server.jar',
         'nogui'
     ], { cwd: cwd });
